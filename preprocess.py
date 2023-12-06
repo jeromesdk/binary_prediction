@@ -1,7 +1,5 @@
-
 import pandas as pd
-import numpy as np 
-import matplotlib.pyplot as plt
+import numpy as np
 import re
 
 
@@ -13,91 +11,75 @@ def read_file_header_attribute(path_to_file, index_column):
     # Check if the first line contains at least one numerical value
     if any(char.isdigit() for char in first_line):
         # If yes, set header=None
-        df = pd.read_csv(path_to_file, delimiter=',', header=None, index_col=index_column)
+        dataframe = pd.read_csv(path_to_file, delimiter=',', header=None, index_col=index_column)
     else:
         # If no, read the file normally
-        df = pd.read_csv(path_to_file, delimiter=',', index_col=index_column)
-    return df
+        dataframe = pd.read_csv(path_to_file, delimiter=',', index_col=index_column)
+    return dataframe
 
 
-def preprocess_data2(path_to_file, index_column=None):
+def replace_with_binary(dataframe):
+    for column in dataframe.columns:
+        unique_values = dataframe[column].replace('', np.nan).dropna().unique()
+
+        # Check if there are only two unique non-null values in the column
+        if len(unique_values) == 2:
+            dataframe[column] = \
+                (dataframe[column].apply(
+                    lambda x: 1 if pd.notna(x) and x == unique_values[0] else 0 if pd.notna(x) else x))
+
+    return dataframe
+
+
+def preprocess_data(path_to_file, index_column=None):
     dataframe = read_file_header_attribute(path_to_file, index_column)
+    dataframe = dataframe.map(lambda x: x.strip() if isinstance(x, str) else x)
+
     dataframe.replace(['?'], value='', inplace=True)
 
-    category_columns = []
-    regex_integer = re.compile(r'^(-?\d+|-?\d+\.0*|nan)$')
+    regex_integer = re.compile(r'^(-?\d+|-?\d+\.0*|nan|)$')  # Regex expression for any integer (-4;3.0000;-2.;nan...)
+    regex_float = re.compile(r'^(-?\d+\.\d+|-?\d+|-?\d+\.|nan|)$')
 
     for col in dataframe.columns:
 
-        if dataframe[col].apply(lambda x: bool(regex_integer.match(str(x)))).all():
+        if dataframe[col].nunique() < 15:
+            dataframe[col] = dataframe[col].astype('category')
+
+        elif dataframe[col].apply(lambda x: bool(regex_integer.match(str(x)))).all():
             dataframe[col] = pd.to_numeric(dataframe[col], errors='coerce')
             dataframe[col] = dataframe[col].astype('Int64')
 
-        if dataframe[col].nunique() < 15:
-            category_columns.append(col)
-            dataframe[col] = dataframe[col].astype('category')
+        elif dataframe[col].apply(lambda x: bool(regex_float.match(str(x)))).all():
+            dataframe[col] = pd.to_numeric(dataframe[col], errors='coerce')
+            dataframe[col] = dataframe[col].astype('Float64')
 
-    print(dataframe.dtypes)
-    print(dataframe)
+    replace_with_binary(dataframe)
+    numeric_columns = dataframe.select_dtypes(include=['int', 'float']).columns
+    # Calculate the median for each numeric column
+    medians = dataframe[numeric_columns].median()
+    # Fill NaN values in each column with its respective median
+    dataframe[numeric_columns] = dataframe[numeric_columns].fillna(medians)
 
+    for col in dataframe.columns:
+        # If the column is categorical
+        if dataframe[col].dtype == 'category':
+            # Check if the column has exactly 2 unique non-NaN values
+            if dataframe[col].nunique(dropna=True) == 2:
+                # Find the most frequent value
+                most_frequent_value = dataframe[col].mode().iloc[0]
 
-def preprocess_data():
-    data_bn = pd.read_csv('data_banknote_authentication.txt', sep = ',', header = None, names=['var', 'skew', 'curt', 'entropy', 'class'])
-    ds_bn = data_bn.drop(columns=['class'])
-    cl_bn = data_bn['class']
+                # Replace NaN values with the most frequent value
+                dataframe[col].fillna(most_frequent_value, inplace=True)
+            else:
+                # Create a temporary variable to store numeric values
+                temp_col = pd.to_numeric(dataframe[col].cat.codes, errors='coerce')
+                # Set NaN values to the median of the numeric values
+                median_value = temp_col.median()
+                temp_col.fillna(median_value, inplace=True)
+                # Replace the original categorical column with the temporary numeric values
+                dataframe[col] = temp_col.astype('category')
 
-    data_ckd = pd.read_csv('kidney_disease.csv')
-    data_ckd.dropna(inplace = True)
-    data_ckd.reset_index(inplace=True, drop=True)
-    data_ckd['age'] = data_ckd['age'].astype('int64')
-    data_ckd['bp'] = data_ckd['bp'].astype('int64')
-    data_ckd['sg'] = data_ckd['sg'].astype("category")
-    data_ckd['al'] = data_ckd['al'].astype("category")
-    data_ckd['su'] = data_ckd['su'].astype("category")
-    data_ckd['rbc'] = data_ckd['rbc'].astype("category")
-    data_ckd['pc'] = data_ckd['pc'].astype("category")
-    data_ckd['pcc'] = data_ckd['pcc'].astype("category")
-    data_ckd['ba'] = data_ckd['ba'].astype("category")
-    data_ckd['bgr'] = data_ckd['bgr'].astype("int64")
-    data_ckd['bu'] = data_ckd['bu'].astype("int64")
-    data_ckd['sod'] = data_ckd['sod'].astype("int64")
-    data_ckd['pcv'] = data_ckd['pcv'].astype("int64")
-    data_ckd['wc'] = data_ckd['wc'].astype("int64")
-    data_ckd['rc'] = data_ckd['rc'].astype("float64")
-    data_ckd['htn'] = data_ckd['htn'].astype("category")
-    data_ckd['dm'] = data_ckd['dm'].astype("category")
-    data_ckd['cad'] = data_ckd['cad'].astype("category")
-    data_ckd['appet'] = data_ckd['appet'].astype("category")
-    data_ckd['pe'] = data_ckd['pe'].astype("category")
-    data_ckd['ane'] = data_ckd['ane'].astype("category")
-    data_ckd['classification'] = data_ckd['classification'].astype("category")
-
-    gt = pd.get_dummies(data_ckd['classification'])
-    ckd = data_ckd.drop(columns='classification')
-
-    for column in ckd.columns:
-        if ckd[column].dtype == 'category':
-            ckd=pd.get_dummies(ckd,columns=[column])
-        else:
-            ckd[column] = (ckd[column]-ckd[column].min())/(ckd[column].max()-ckd[column].min())
-    return(ds_bn,cl_bn,ckd,gt)
+    return dataframe
 
 
-# print(pd.read_csv('kidney_disease.csv', delimiter=',').dtypes)
-preprocess_data2('kidney_disease.csv', index_column=0)
-
-# # Créer un exemple de DataFrame (assurez-vous d'utiliser votre propre DataFrame)
-# data = {'colonne': ['-7', '-9.0000000', '6.000', '61', '3.', 'NaN', '6.2', '-4.126']}
-# df = pd.DataFrame(data)
-#
-# # Définir le motif regex pour les entiers valides
-# pattern = re.compile(r'^(-?\d+|-?\d+\.0*|NaN)$')
-#
-# # Appliquer la vérification sur la colonne
-# result = df['colonne'].apply(lambda x: bool(pattern.match(str(x))))
-# print(result)
-# # Vérifier si toutes les valeurs sont des entiers
-# if result.all():
-#     print("La colonne contient uniquement des entiers conformes aux critères.")
-# else:
-#     print("La colonne contient au moins une valeur qui ne correspond pas aux critères.")
+df = preprocess_data('kidney_disease.csv', index_column=0)
