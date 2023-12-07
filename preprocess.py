@@ -44,8 +44,8 @@ def preprocess_data(path_to_file, index_column=None, categorical_max_different_v
 
         if dataframe[col].nunique() <= categorical_max_different_values:
             dataframe[col] = dataframe[col].astype('category')
-            # @TODO
-            # COULD BE MODIFIED TO SEE WHETHER OR NOT IT CAN BE CAST TO INTEGERS/FLOATS AND THEN TAKE THE MEDIAN
+            # @Future to do
+            # COULD BE MODIFIED TO SEE WHETHER IT CAN BE CAST TO INTEGERS/FLOATS AND THEN TAKE THE MEDIAN
             # MAY IMPROVE RESULTS OR (NOT SURE)
             # Replace empty strings and NaN values with the most frequent value
             dataframe[col] = dataframe[col].replace('', dataframe[col].mode()[0])
