@@ -31,10 +31,10 @@ def replace_with_binary(dataframe):
     return dataframe
 
 
-def preprocess_data(path_to_file, index_column=None):
+def preprocess_data(path_to_file, index_column=None, categorical_max_different_values=10, drop_first=True):
     dataframe = read_file_header_attribute(path_to_file, index_column)
-    dataframe = dataframe.map(lambda x: x.strip() if isinstance(x, str) else x)
 
+    dataframe = dataframe.map(lambda x: x.strip() if isinstance(x, str) else x)
     dataframe.replace(['?'], value='', inplace=True)
 
     regex_integer = re.compile(r'^(-?\d+|-?\d+\.0*|nan|)$')  # Regex expression for any integer (-4;3.0000;-2.;nan...)
@@ -42,44 +42,32 @@ def preprocess_data(path_to_file, index_column=None):
 
     for col in dataframe.columns:
 
-        if dataframe[col].nunique() < 15:
+        if dataframe[col].nunique() <= categorical_max_different_values:
             dataframe[col] = dataframe[col].astype('category')
+            # @TODO
+            # COULD BE MODIFIED TO SEE WHETHER OR NOT IT CAN BE CAST TO INTEGERS/FLOATS AND THEN TAKE THE MEDIAN
+            # MAY IMPROVE RESULTS OR (NOT SURE)
+            # Replace empty strings and NaN values with the most frequent value
+            dataframe[col] = dataframe[col].replace('', dataframe[col].mode()[0])
+            dataframe[col] = dataframe[col].fillna(dataframe[col].mode()[0])
 
         elif dataframe[col].apply(lambda x: bool(regex_integer.match(str(x)))).all():
             dataframe[col] = pd.to_numeric(dataframe[col], errors='coerce')
             dataframe[col] = dataframe[col].astype('Int64')
+            # Fill NaN values with the median
+            dataframe[col] = dataframe[col].fillna(dataframe[col].median())
 
         elif dataframe[col].apply(lambda x: bool(regex_float.match(str(x)))).all():
             dataframe[col] = pd.to_numeric(dataframe[col], errors='coerce')
             dataframe[col] = dataframe[col].astype('Float64')
+            # Fill NaN values with the median
+            dataframe[col] = dataframe[col].fillna(dataframe[col].median())
 
-    replace_with_binary(dataframe)
-    numeric_columns = dataframe.select_dtypes(include=['int', 'float']).columns
-    # Calculate the median for each numeric column
-    medians = dataframe[numeric_columns].median()
-    # Fill NaN values in each column with its respective median
-    dataframe[numeric_columns] = dataframe[numeric_columns].fillna(medians)
-
-    for col in dataframe.columns:
-        # If the column is categorical
-        if dataframe[col].dtype == 'category':
-            # Check if the column has exactly 2 unique non-NaN values
-            if dataframe[col].nunique(dropna=True) == 2:
-                # Find the most frequent value
-                most_frequent_value = dataframe[col].mode().iloc[0]
-
-                # Replace NaN values with the most frequent value
-                dataframe[col].fillna(most_frequent_value, inplace=True)
-            else:
-                # Create a temporary variable to store numeric values
-                temp_col = pd.to_numeric(dataframe[col].cat.codes, errors='coerce')
-                # Set NaN values to the median of the numeric values
-                median_value = temp_col.median()
-                temp_col.fillna(median_value, inplace=True)
-                # Replace the original categorical column with the temporary numeric values
-                dataframe[col] = temp_col.astype('category')
+    dataframe = pd.get_dummies(dataframe, drop_first=drop_first)
 
     return dataframe
 
 
 df = preprocess_data('kidney_disease.csv', index_column=0)
+print(df)
+print(df.info())
