@@ -66,7 +66,7 @@ def preprocess_data(
     """
     dataframe = read_file_header_attribute(path_to_file, index_column)
 
-    dataframe = dataframe.map(lambda x: x.strip() if isinstance(x, str) else x)
+    dataframe = dataframe.map(lambda x_: x.strip() if isinstance(x_, str) else x_)
     dataframe.replace(['?'], value='', inplace=True)
 
     regex_integer = re.compile(r'^(-?\d+|-?\d+\.0*|nan|)$')  # Regex expression for any integer (-4;3.0000;-2.;nan...)
