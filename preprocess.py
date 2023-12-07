@@ -97,7 +97,6 @@ def preprocess_data(
             dataframe[col] = scaler.transform(dataframe[col].values.reshape(-1, 1))
 
     dataframe = pd.get_dummies(dataframe, drop_first=drop_first)
-
     return dataframe
 
 
