@@ -3,7 +3,15 @@ import numpy as np
 import re
 
 
-def read_file_header_attribute(path_to_file, index_column):
+def read_file_header_attribute(path_to_file, index_column=None, delimiter=','):
+    """
+    Read the dataframe stored in a file
+
+    :param path_to_file: path of the file containing the dataframe
+    :param index_column: If the file contains a column for the index, it specifies the index of that column
+    :param delimiter: the delimiter used in the file
+    :return: dataframe
+    """
     # Read the first line of the file
     with open(path_to_file, 'r') as file:
         first_line = file.readline().strip()
@@ -11,27 +19,25 @@ def read_file_header_attribute(path_to_file, index_column):
     # Check if the first line contains at least one numerical value
     if any(char.isdigit() for char in first_line):
         # If yes, set header=None
-        dataframe = pd.read_csv(path_to_file, delimiter=',', header=None, index_col=index_column)
+        dataframe = pd.read_csv(path_to_file, delimiter=delimiter, header=None, index_col=index_column)
     else:
         # If no, read the file normally
-        dataframe = pd.read_csv(path_to_file, delimiter=',', index_col=index_column)
-    return dataframe
-
-
-def replace_with_binary(dataframe):
-    for column in dataframe.columns:
-        unique_values = dataframe[column].replace('', np.nan).dropna().unique()
-
-        # Check if there are only two unique non-null values in the column
-        if len(unique_values) == 2:
-            dataframe[column] = \
-                (dataframe[column].apply(
-                    lambda x: 1 if pd.notna(x) and x == unique_values[0] else 0 if pd.notna(x) else x))
-
+        dataframe = pd.read_csv(path_to_file, delimiter=delimiter, index_col=index_column)
     return dataframe
 
 
 def preprocess_data(path_to_file, index_column=None, categorical_max_different_values=10, drop_first=True):
+    """
+    Preprocess data from a given file. First, read it as a dataframe, parse columns types to their according types,
+    fill missing values and do one-hot-encoding for categorical columns.
+
+    :param path_to_file: path of the file containing the dataframe
+    :param index_column: If the file contains a column for the index, it specifies the index of that column
+    :param categorical_max_different_values: Maximum number of different values in a column from which it can be set as
+                                             categorical
+    :param drop_first: Whether during one-hot-encoding first column should be dropped
+    :return: preprocess dataframe
+    """
     dataframe = read_file_header_attribute(path_to_file, index_column)
 
     dataframe = dataframe.map(lambda x: x.strip() if isinstance(x, str) else x)
