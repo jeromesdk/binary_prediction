@@ -12,14 +12,12 @@ Contact: jerome.de-kersabiec@imt-atlantique.net ; pierre.monot@imt-atlantique.ne
 Date: 07/12/2023
 """
 
-__author__ = ""
-__email__ = ""
-
 import pandas as pd
 import re
 from sklearn.model_selection import train_test_split, ShuffleSplit
 from typing import Tuple
 from typing import Union
+from sklearn.preprocessing import StandardScaler
 
 
 def read_file_header_attribute(
@@ -85,17 +83,18 @@ def preprocess_data(
             dataframe[col] = dataframe[col].replace('', dataframe[col].mode()[0])
             dataframe[col] = dataframe[col].fillna(dataframe[col].mode()[0])
 
-        elif dataframe[col].apply(lambda x: bool(regex_integer.match(str(x)))).all():
+        else:
             dataframe[col] = pd.to_numeric(dataframe[col], errors='coerce')
-            dataframe[col] = dataframe[col].astype('Int64')
+            if dataframe[col].apply(lambda x_: bool(regex_integer.match(str(x_)))).all():
+                dataframe[col] = dataframe[col].astype('Int64')
+            elif dataframe[col].apply(lambda x_: bool(regex_float.match(str(x_)))).all():
+                dataframe[col] = dataframe[col].astype('Float64')
             # Fill NaN values with the median
             dataframe[col] = dataframe[col].fillna(dataframe[col].median())
-
-        elif dataframe[col].apply(lambda x: bool(regex_float.match(str(x)))).all():
-            dataframe[col] = pd.to_numeric(dataframe[col], errors='coerce')
-            dataframe[col] = dataframe[col].astype('Float64')
-            # Fill NaN values with the median
-            dataframe[col] = dataframe[col].fillna(dataframe[col].median())
+            # Center and normalize the data
+            scaler = StandardScaler()
+            scaler.fit(dataframe[col].values.reshape(-1, 1))
+            dataframe[col] = scaler.transform(dataframe[col].values.reshape(-1, 1))
 
     dataframe = pd.get_dummies(dataframe, drop_first=drop_first)
 
@@ -138,7 +137,7 @@ def prepare_dataset_for_training(
 
 
 df = preprocess_data('kidney_disease.csv', index_column=0)
-print(len(df))
+print(df)
 print(df.info())
 
 x_train, y_train, x_test, y_test = prepare_dataset_for_training(
