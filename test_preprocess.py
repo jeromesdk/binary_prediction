@@ -1,10 +1,10 @@
 import pandas as pd
 import pytest
-from preprocess import (
+from tools import (
     read_file_header_attribute,
     preprocess_data,
 )
-# Run the test with  the commande pytest test_preprocess.py
+# Run the test with  the command pytest test_preprocess.py
 
 def test_read_file_header_attribute():
     

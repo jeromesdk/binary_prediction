@@ -9,22 +9,15 @@ Description: This file provides a tool to implement a machine learning workflow:
 
 Author: Jérôme Sioc'han de Kersabiec, Pierre Monot, and Romain Pépin
 Contact: jerome.de-kersabiec@imt-atlantique.net ; pierre.monot@imt-atlantique.net ; romain.pepin@imt-atlantique.net
-Date: 07/12/2023
+Date: 23/12/2023
 """
 import numpy as np
 import optuna
-import pandas as pd
 import re
-
-from sklearn.model_selection import train_test_split, ShuffleSplit
-
-from optuna.integration import OptunaSearchCV
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, precision_score, recall_score
-from sklearn.model_selection import train_test_split, ShuffleSplit, cross_val_score, cross_val_predict, GridSearchCV
+from sklearn.metrics import f1_score, confusion_matrix
+from sklearn.model_selection import ShuffleSplit, GridSearchCV
 from typing import Tuple
 from typing import Union
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report as report
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -49,7 +42,14 @@ warnings.filterwarnings("ignore")
 
 
 class BinaryClassificationModel(nn.Module):
+    """
+    Multi layer perceptron for binary classification
+    """
     def __init__(self, input_size):
+        """
+        Initialize the class by defining a sequential function that will be used in the forward method
+        :param input_size: the size of the input data that are passed through the neural network
+        """
         super(BinaryClassificationModel, self).__init__()
         self.model = nn.Sequential(
             nn.Linear(input_size, 512),
@@ -59,6 +59,11 @@ class BinaryClassificationModel(nn.Module):
         )
 
     def forward(self, x):
+        """
+        Calculate the output of the neural network given an input data
+        :param x: The input data
+        :return: The output of the neural network
+        """
         return self.model(x)
 
 
@@ -172,8 +177,6 @@ def prepare_dataset_for_training(
     x = dataframe.drop(target_column_name, axis=1)
     y = dataframe[target_column_name]
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=random_state)
-    if n_splits is None:
-        n_splits = int(len(dataframe) / 100)
     cvp = ShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=random_state)
 
     return x_train, y_train, x_test, y_test, cvp
@@ -187,26 +190,25 @@ def training(
         cvp: ShuffleSplit,
         random_state: int = 42,
         verbose: int = 0,
-        test_size: float = 0.3,
         n_trials: int = 20
 ) -> Tuple[
-     list[
-         str
-     ],
-     list[
+    list[
+        str
+    ],
+    list[
         np.ndarray
-     ],
-     list[
-         Union[
-             BinaryClassificationModel,
-             SVC,
-             LogisticRegression,
-             DecisionTreeClassifier,
-             RandomForestClassifier,
-             AdaBoostClassifier,
-             KNeighborsClassifier
-         ]
-     ]
+    ],
+    list[
+        Union[
+            BinaryClassificationModel,
+            SVC,
+            LogisticRegression,
+            DecisionTreeClassifier,
+            RandomForestClassifier,
+            AdaBoostClassifier,
+            KNeighborsClassifier
+        ]
+    ]
 ]:
     """
     Train different models : SVC, logistic regression, decision tree, random forest, AdaBoost, K nearest neighbors and
@@ -221,7 +223,6 @@ def training(
                     >2 : the score is also displayed;
                     >3 : the fold and candidate parameter indexes are also displayed together with the starting time of
                     the computation.
-    :param test_size: Size of the test dataset (should be between 0.0 and 1.0)
     :param x_test: Feature data to test the model  (without target variable)
     :param y_test: Target variable data to test the model
     :param n_trials: Number of trials to test different parameters on ML algorithms
@@ -388,23 +389,24 @@ def objective(trial, cvp, input_size, x_train_tensor, y_train_tensor):
         y_pred_test = (y_pred_test > 0.5).float()
         # Calculate accuracy on the test set
         f1_scores.append(f1_score(y_train_tensor[test_index].detach().numpy(), y_pred_test.detach().numpy()))
-    f1 = sum(f1_scores)/len(f1_scores)
+    f1 = sum(f1_scores) / len(f1_scores)
 
     return f1
 
 
 def visualize_results(
-        model_names,
-        confusion_matrices,
-        beta=1
-):
+        model_names: list[str],
+        confusion_matrices: list[np.ndarray],
+        beta: int = 1
+) -> None:
     """
     Print and plot different metrics to visualize the classification results for all models according to confusion
     matrices of those models
 
     :param beta: The β used for Fβ score
     :param confusion_matrices: A list of confusion matrices (one for each model)
-    :param model_names:
+    :param model_names: A list of model names
+    :return None
     """
     print("β = " + str(beta) + "\n")
     list_f_beta_scores = np.zeros(len(model_names))
@@ -422,11 +424,11 @@ def visualize_results(
         correct = np.trace(confusion_matrices[index])
         accuracy = correct / total
         list_accuracies[index] = accuracy
-        precision = tp/(tp+fp)
+        precision = tp / (tp + fp)
         list_precision[index] = precision
-        recall = tp/(tp+fn)
+        recall = tp / (tp + fn)
         list_recall[index] = recall
-        f_beta_score = (1 + (beta**2))*precision*recall/(((beta**2)*precision)+recall)
+        f_beta_score = (1 + (beta ** 2)) * precision * recall / (((beta ** 2) * precision) + recall)
         list_f_beta_scores[index] = f_beta_score
         # Print metrics information
         print("\nAccuracy: {:.4f}".format(accuracy))
@@ -434,7 +436,11 @@ def visualize_results(
         print("Recall: {:.4f}".format(recall))
         print("Fβ Score: {:.4f}\n".format(f_beta_score))
 
-    sorted_f_beta_score = sorted(range(len(list_f_beta_scores)), key=lambda i: list_f_beta_scores[i], reverse=True)
+    sorted_f_beta_score = sorted(
+        range(len(list_f_beta_scores)),
+        key=lambda index_: list_f_beta_scores[index_],
+        reverse=True
+    )
     print("Best models according to Fβ scores :")
     for i in sorted_f_beta_score:
         print(model_names[i])
@@ -442,63 +448,37 @@ def visualize_results(
     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
 
     axes[0, 0].bar(model_names, list_f_beta_scores)
-    axes[0, 0].set_xlabel ('Model Names')
+    axes[0, 0].set_xlabel('Model Names')
     axes[0, 0].set_ylabel('Fβ Score')
     axes[0, 0].set_title('Fβ Score of models')
-    axes[0, 0].set_ylim(min(list_f_beta_scores)-0.1, max(list_f_beta_scores))
+    axes[0, 0].set_ylim(min(list_f_beta_scores) - 0.1, max(list_f_beta_scores))
     axes[0, 0].set_xticks(range(len(model_names)))  # Set the tick positions
     axes[0, 0].set_xticklabels(model_names, rotation=45, ha='right')  # Set the tick labels and rotation
 
     axes[0, 1].bar(model_names, list_accuracies)
-    axes[0, 1].set_xlabel ('Model Names')
+    axes[0, 1].set_xlabel('Model Names')
     axes[0, 1].set_ylabel('Accuracy')
     axes[0, 1].set_title('Accuracy of models')
-    axes[0, 1].set_ylim(min(list_accuracies)-0.1, max(list_accuracies))
+    axes[0, 1].set_ylim(min(list_accuracies) - 0.1, max(list_accuracies))
     axes[0, 1].set_xticks(range(len(model_names)))  # Set the tick positions
     axes[0, 1].set_xticklabels(model_names, rotation=45, ha='right')  # Set the tick labels and rotation
 
     axes[1, 0].bar(model_names, list_precision)
-    axes[1, 0].set_xlabel ('Model Names')
+    axes[1, 0].set_xlabel('Model Names')
     axes[1, 0].set_ylabel('Precision')
     axes[1, 0].set_title('Precision of models')
-    axes[1, 0].set_ylim(min(list_precision)-0.1, max(list_precision))
+    axes[1, 0].set_ylim(min(list_precision) - 0.1, max(list_precision))
     axes[1, 0].set_xticks(range(len(model_names)))  # Set the tick positions
     axes[1, 0].set_xticklabels(model_names, rotation=45, ha='right')  # Set the tick labels and rotation
 
     axes[1, 1].bar(model_names, list_recall)
-    axes[1, 1].set_xlabel ('Model Names')
+    axes[1, 1].set_xlabel('Model Names')
     axes[1, 1].set_ylabel('Recall')
     axes[1, 1].set_title('Recall of models')
-    axes[1, 1].set_ylim(min(list_recall)-0.1, max(list_recall))
+    axes[1, 1].set_ylim(min(list_recall) - 0.1, max(list_recall))
     axes[1, 1].set_xticks(range(len(model_names)))  # Set the tick positions
     axes[1, 1].set_xticklabels(model_names, rotation=45, ha='right')  # Set the tick labels and rotation
 
     plt.tight_layout()
     plt.show()
     return None
-
-df = read_file_header_attribute('test_with_headers.csv', index_column=0)
-with open("expected_with_headers.txt", "w") as file:
-    file.write(str(df))
-
-
-'''df = preprocess_data('kidney_disease.csv', index_column=0)
-
-xtrain, ytrain, xtest, ytest, cv = prepare_dataset_for_training(
-    df,
-    'classification_notckd',
-    n_splits=8,
-)
-
-name_ml_models, conf_matrices, _ = training(
-    x_train=xtrain,
-    y_train=ytrain,
-    x_test=xtest,
-    y_test=ytest,
-    cvp=cv,
-    n_trials=1,
-    verbose=1
-)
-
-visualize_results(name_ml_models, conf_matrices)
-'''
