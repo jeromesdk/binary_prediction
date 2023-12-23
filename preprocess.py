@@ -14,10 +14,14 @@ Date: 07/12/2023
 
 import pandas as pd
 import re
+
 from sklearn.model_selection import train_test_split, ShuffleSplit
 from typing import Tuple
 from typing import Union
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report as report
+from scikitplot.metrics import plot_confusion_matrix, plot_precision_recall_curve
+import matplotlib.pyplot as plt
 
 
 def read_file_header_attribute(
@@ -133,6 +137,28 @@ def prepare_dataset_for_training(
         y_ = dataframe[target_column_name]
         cvp_ = ShuffleSplit(n_splits=n_splits, test_size=test_size)
         return x_, y_, cvp_
+
+def visualize_results(
+    ground_truth: pd.Series,
+    result: pd.Series
+):
+    """
+    Prints different metrics and plots to visualize the classification results
+
+    :param ground_truth: pandas.Series of the true Labels
+    :param result: pandas.Series of the predicted Labels
+    """
+
+    #First prints the predictions scores
+    print(records(ground_truth,result))
+
+    #Plots the confusion matrix 
+
+    plot_confusion_matrix(ground_truth,result,normalize = True)
+    plt.show()
+
+
+
 
 
 df = preprocess_data('kidney_disease.csv', index_column=0)
