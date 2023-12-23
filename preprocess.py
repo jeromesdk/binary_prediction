@@ -19,13 +19,12 @@ import re
 from sklearn.model_selection import train_test_split, ShuffleSplit
 
 from optuna.integration import OptunaSearchCV
-from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, precision_score, recall_score
 from sklearn.model_selection import train_test_split, ShuffleSplit, cross_val_score, cross_val_predict, GridSearchCV
 from typing import Tuple
 from typing import Union
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report as report
-from scikitplot.metrics import plot_confusion_matrix, plot_precision_recall_curve
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -53,9 +52,9 @@ class BinaryClassificationModel(nn.Module):
     def __init__(self, input_size):
         super(BinaryClassificationModel, self).__init__()
         self.model = nn.Sequential(
-            nn.Linear(input_size, 256),
+            nn.Linear(input_size, 512),
             nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Linear(512, 1),
             nn.Sigmoid()
         )
 
@@ -190,20 +189,28 @@ def training(
         verbose: int = 0,
         test_size: float = 0.3,
         n_trials: int = 20
-) -> list[
-    Union[
-        BinaryClassificationModel,
-        SVC,
-        LogisticRegression,
-        DecisionTreeClassifier,
-        RandomForestClassifier,
-        AdaBoostClassifier,
-        KNeighborsClassifier
-    ]
+) -> Tuple[
+     list[
+         str
+     ],
+     list[
+        np.ndarray
+     ],
+     list[
+         Union[
+             BinaryClassificationModel,
+             SVC,
+             LogisticRegression,
+             DecisionTreeClassifier,
+             RandomForestClassifier,
+             AdaBoostClassifier,
+             KNeighborsClassifier
+         ]
+     ]
 ]:
     """
     Train different models : SVC, logistic regression, decision tree, random forest, AdaBoost, K nearest neighbors and
-    deep learning.
+    deep learning. Test it and return models, confusion matrices and name of the models.
 
     :param x_train: Features data to train the model on (without target variable)
     :param y_train: Target variable data to train the model on
@@ -218,9 +225,10 @@ def training(
     :param x_test: Feature data to test the model  (without target variable)
     :param y_test: Target variable data to test the model
     :param n_trials: Number of trials to test different parameters on ML algorithms
-    :return: A list of all trained models
+    :return: A list of all trained models, a list of all confusion matrices and a list containing model names
     """
     output_models = []
+    output_confusion_matrices = []
 
     x_train_array = x_train.values
     y_train_array = y_train.values.reshape(-1, 1)
@@ -241,11 +249,9 @@ def training(
         n_trials=n_trials
     )
 
-    # Print the best hyperparameters
     best_params = study.best_params
     best_lr = best_params['lr']
     best_num_epochs = best_params['num_epochs']
-    print(f"Best Learning Rate: {best_lr}, Best Number of Epochs: {best_num_epochs}")
 
     # Use the best hyperparameters to train the final model
     final_model = BinaryClassificationModel(input_size)
@@ -270,8 +276,8 @@ def training(
         y_pred_test = final_model(x_test_tensor)
     y_pred_test = (y_pred_test > 0.5).float()
     conf_matrix = confusion_matrix(y_test_tensor.detach().numpy(), y_pred_test.detach().numpy())
-
     output_models.append(final_model)
+    output_confusion_matrices.append(conf_matrix)
 
     # All the models that will be applied
     models = [
@@ -322,12 +328,32 @@ def training(
         conf_matrix = confusion_matrix(y_test, y_pred)
 
         output_models.append(best_model)
+        output_confusion_matrices.append(conf_matrix)
 
-    return output_models
+    model_names = [
+        "Multi Layer Perceptron",
+        "SVM",
+        "Logistic Regression",
+        "Decision Tree",
+        "Random Forest",
+        "Ada Boost",
+        "K-Nearest Neighbors"
+    ]
+    return model_names, output_confusion_matrices, output_models
 
 
 # The following function is not tested yet
 def objective(trial, cvp, input_size, x_train_tensor, y_train_tensor):
+    """
+    Objective function to find best learning rate and best epoch to use for the deep learning model using cross
+    validation
+    :param trial: Number of trials to find the best parameters
+    :param cvp: Cross validation object
+    :param input_size: The input size of the multilayer perceptron
+    :param x_train_tensor: Data to train the model on (features without target variable)
+    :param y_train_tensor: Labels of the data to train the model on
+    :return: Average of F1 scores
+    """
     # Sample hyperparameters
     lr = trial.suggest_float('lr', 1e-5, 1e-1, log=True)
     num_epochs = trial.suggest_int('num_epochs', 100, 5000, step=1000)
@@ -368,21 +394,86 @@ def objective(trial, cvp, input_size, x_train_tensor, y_train_tensor):
 
 
 def visualize_results(
-    ground_truth: pd.Series,
-    result: pd.Series
+        model_names,
+        confusion_matrices,
+        beta=1
 ):
     """
-    Prints different metrics and plots to visualize the classification results
+    Print and plot different metrics to visualize the classification results for all models according to confusion
+    matrices of those models
 
-    :param ground_truth: pandas.Series of the true Labels
-    :param result: pandas.Series of the predicted Labels
+    :param beta: The β used for Fβ score
+    :param confusion_matrices: A list of confusion matrices (one for each model)
+    :param model_names:
     """
+    print("β = " + str(beta) + "\n")
+    list_f_beta_scores = np.zeros(len(model_names))
+    list_accuracies = np.zeros(len(model_names))
+    list_precision = np.zeros(len(model_names))
+    list_recall = np.zeros(len(model_names))
+    for index in range(len(model_names)):
+        print(model_names[index])
+        print("\nConfusion Matrix:")
+        print(confusion_matrices[index])
+        tp = confusion_matrices[index][0][0]
+        fn = confusion_matrices[index][0][1]
+        fp = confusion_matrices[index][1][0]
+        total = confusion_matrices[index].sum()
+        correct = np.trace(confusion_matrices[index])
+        accuracy = correct / total
+        list_accuracies[index] = accuracy
+        precision = tp/(tp+fp)
+        list_precision[index] = precision
+        recall = tp/(tp+fn)
+        list_recall[index] = recall
+        f_beta_score = (1 + (beta**2))*precision*recall/(((beta**2)*precision)+recall)
+        list_f_beta_scores[index] = f_beta_score
+        # Print metrics information
+        print("\nAccuracy: {:.4f}".format(accuracy))
+        print("Precision: {:.4f}".format(precision))
+        print("Recall: {:.4f}".format(recall))
+        print("Fβ Score: {:.4f}\n".format(f_beta_score))
 
-    #First prints the predictions scores
-    print(report(ground_truth, result))
+    sorted_f_beta_score = sorted(range(len(list_f_beta_scores)), key=lambda i: list_f_beta_scores[i], reverse=True)
+    print("Best models according to Fβ scores :")
+    for i in sorted_f_beta_score:
+        print(model_names[i])
 
-    #Plots the confusion matrix
-    plot_confusion_matrix(ground_truth,result,normalize = True)
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
+
+    axes[0, 0].bar(model_names, list_f_beta_scores)
+    axes[0, 0].set_xlabel ('Model Names')
+    axes[0, 0].set_ylabel('Fβ Score')
+    axes[0, 0].set_title('Fβ Score of models')
+    axes[0, 0].set_ylim(min(list_f_beta_scores)-0.1, max(list_f_beta_scores))
+    axes[0, 0].set_xticks(range(len(model_names)))  # Set the tick positions
+    axes[0, 0].set_xticklabels(model_names, rotation=45, ha='right')  # Set the tick labels and rotation
+
+    axes[0, 1].bar(model_names, list_accuracies)
+    axes[0, 1].set_xlabel ('Model Names')
+    axes[0, 1].set_ylabel('Accuracy')
+    axes[0, 1].set_title('Accuracy of models')
+    axes[0, 1].set_ylim(min(list_accuracies)-0.1, max(list_accuracies))
+    axes[0, 1].set_xticks(range(len(model_names)))  # Set the tick positions
+    axes[0, 1].set_xticklabels(model_names, rotation=45, ha='right')  # Set the tick labels and rotation
+
+    axes[1, 0].bar(model_names, list_precision)
+    axes[1, 0].set_xlabel ('Model Names')
+    axes[1, 0].set_ylabel('Precision')
+    axes[1, 0].set_title('Precision of models')
+    axes[1, 0].set_ylim(min(list_precision)-0.1, max(list_precision))
+    axes[1, 0].set_xticks(range(len(model_names)))  # Set the tick positions
+    axes[1, 0].set_xticklabels(model_names, rotation=45, ha='right')  # Set the tick labels and rotation
+
+    axes[1, 1].bar(model_names, list_recall)
+    axes[1, 1].set_xlabel ('Model Names')
+    axes[1, 1].set_ylabel('Recall')
+    axes[1, 1].set_title('Recall of models')
+    axes[1, 1].set_ylim(min(list_recall)-0.1, max(list_recall))
+    axes[1, 1].set_xticks(range(len(model_names)))  # Set the tick positions
+    axes[1, 1].set_xticklabels(model_names, rotation=45, ha='right')  # Set the tick labels and rotation
+
+    plt.tight_layout()
     plt.show()
 
 
@@ -394,6 +485,14 @@ xtrain, ytrain, xtest, ytest, cv = prepare_dataset_for_training(
     n_splits=8,
 )
 
-print(training(x_train=xtrain, y_train=ytrain, x_test=xtest, y_test=ytest, cvp=cv, n_trials=10))
+name_ml_models, conf_matrices, _ = training(
+    x_train=xtrain,
+    y_train=ytrain,
+    x_test=xtest,
+    y_test=ytest,
+    cvp=cv,
+    n_trials=1,
+    verbose=1
+)
 
-visualize_results(xtrain, ytrain)
+visualize_results(name_ml_models, conf_matrices)
