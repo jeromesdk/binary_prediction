@@ -150,7 +150,7 @@ def visualize_results(
     """
 
     #First prints the predictions scores
-    print(records(ground_truth,result))
+    print(report(ground_truth,result))
 
     #Plots the confusion matrix 
 
