@@ -5,9 +5,9 @@
 
 After copying the repositery in local, use the following command to download required dependancies : 
 
-'''
+```
 pip install -r requirements.txt
-'''
+```
 
 ## Data descritpion
 - data_banknote: 
