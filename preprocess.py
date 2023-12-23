@@ -132,7 +132,7 @@ def preprocess_data(
             elif dataframe[col].apply(lambda x_: bool(regex_float.match(str(x_)))).all():
                 dataframe[col] = dataframe[col].astype('Float64')
             # Fill NaN values with the median
-            dataframe[col] = dataframe[col].fillna(dataframe[col].median())
+            dataframe[col] = dataframe[col].fillna(int(dataframe[col].median()))
             # Center and normalize the data
             scaler = StandardScaler()
             scaler.fit(dataframe[col].values.reshape(-1, 1))
@@ -475,9 +475,14 @@ def visualize_results(
 
     plt.tight_layout()
     plt.show()
+    return None
+
+df = read_file_header_attribute('test_with_headers.csv', index_column=0)
+with open("expected_with_headers.txt", "w") as file:
+    file.write(str(df))
 
 
-df = preprocess_data('kidney_disease.csv', index_column=0)
+'''df = preprocess_data('kidney_disease.csv', index_column=0)
 
 xtrain, ytrain, xtest, ytest, cv = prepare_dataset_for_training(
     df,
@@ -496,3 +501,4 @@ name_ml_models, conf_matrices, _ = training(
 )
 
 visualize_results(name_ml_models, conf_matrices)
+'''

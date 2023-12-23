@@ -1,0 +1,35 @@
+       sg   al   su       rbc        pc  ...  htn    dm   pe  ane  classification
+id                                       ...                                     
+0   1.020  1.0  0.0       NaN    normal  ...  yes   yes   no   no             ckd
+1   1.020  4.0  0.0       NaN    normal  ...   no    no   no   no             ckd
+2   1.010  2.0  3.0    normal    normal  ...   no   yes   no  yes             ckd
+3   1.005  4.0  0.0    normal  abnormal  ...  yes    no  yes  yes             ckd
+4   1.010  2.0  0.0    normal    normal  ...   no    no   no   no             ckd
+5   1.015  3.0  0.0       NaN       NaN  ...  yes   yes  yes   no             ckd
+6   1.010  0.0  0.0       NaN    normal  ...   no    no   no   no             ckd
+7   1.015  2.0  4.0    normal  abnormal  ...   no   yes  yes   no             ckd
+8   1.015  3.0  0.0    normal  abnormal  ...  yes   yes   no  yes             ckd
+9   1.020  2.0  0.0  abnormal  abnormal  ...  yes   yes   no  yes             ckd
+10  1.010  2.0  4.0       NaN  abnormal  ...  yes   yes   no  yes             ckd
+11  1.010  3.0  0.0  abnormal  abnormal  ...  yes   yes  yes   no             ckd
+12  1.015  3.0  1.0       NaN    normal  ...  yes   yes  yes   no             ckd
+13    NaN  NaN  NaN       NaN       NaN  ...  yes   yes  yes   no             ckd
+14  1.010  3.0  2.0    normal  abnormal  ...  yes   yes  yes   no             ckd
+15  1.015  3.0  0.0       NaN    normal  ...  yes    no   no  yes             ckd
+16  1.015  2.0  0.0       NaN    normal  ...   no    no   no   no             ckd
+17    NaN  NaN  NaN       NaN       NaN  ...  yes    no   no   no             ckd
+18  1.025  0.0  3.0       NaN    normal  ...  yes   yes   no   no             ckd
+19  1.015  1.0  0.0       NaN  abnormal  ...  yes    no   no   no             ckd
+20  1.015  2.0  0.0  abnormal  abnormal  ...  yes   yes  yes  yes             ckd
+21    NaN  NaN  NaN       NaN       NaN  ...  yes   yes   no   no             ckd
+22  1.025  4.0  0.0    normal  abnormal  ...  yes    no   no  yes             ckd
+23  1.010  0.0  0.0       NaN    normal  ...   no    no   no  yes             ckd
+24  1.015  4.0  0.0    normal  abnormal  ...  yes    no   no   no             ckd
+25  1.025  0.0  0.0       NaN    normal  ...  yes   yes   no  yes             ckd
+26  1.015  0.0  0.0       NaN    normal  ...  yes   yes   no   no             ckd
+27  1.010  3.0  4.0    normal  abnormal  ...  yes   yes  yes   no             ckd
+28    NaN  1.0  3.0       NaN       NaN  ...   no   yes   no   no             ckd
+29  1.005  1.0  0.0  abnormal  abnormal  ...   no    no   no   no             ckd
+30    NaN  NaN  NaN       NaN       NaN  ...  yes   yes   no   no             ckd
+
+[31 rows x 21 columns]
