@@ -176,3 +176,5 @@ x, y, cvp = prepare_dataset_for_training(
     'classification_notckd',
     n_splits=8
 )
+
+visualize_results(y_train,y_train)
