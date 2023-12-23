@@ -1,5 +1,21 @@
 # mini_project_ML
 
+## Authors
+
+This project has been done by Jérôme Sioc'han de Kersabiec, Pierre Monot and Romain Pépin.
+
+## Purpose
+
+The project aims to implement a machine learning workflow no matter the kind of input dataset.
+1. Import the dataset
+2. Clean the data, perform pre-processing
+    I Replace missing values by average or median values
+    I Center and normalize the data
+3. Split the dataset
+    I Split between training set and test set
+    I Split the training set for cross-validation
+4. Train the model (including feature selection)
+5. Validate the model
 
 ## Setup project
 
@@ -10,6 +26,9 @@ pip install -r requirements.txt
 ```
 
 ## Data descritpion
+
+We worked on two different datasets :
+
 - data_banknote: 
     - Data format: .txt 
     - Data info: 
