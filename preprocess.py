@@ -164,12 +164,14 @@ def prepare_dataset_for_training(
     :param n_splits: Number of splits for cross validation if it is used
     :return: x and y data for training and testing and a cross validation object
     """
+
     x = dataframe.drop(target_column_name, axis=1)
     y = dataframe[target_column_name]
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=random_state)
     if n_splits is None:
         n_splits = int(len(dataframe) / 100)
     cvp = ShuffleSplit(n_splits=n_splits, test_size=test_size, random_state=random_state)
+
     return x_train, y_train, x_test, y_test, cvp
 
 
