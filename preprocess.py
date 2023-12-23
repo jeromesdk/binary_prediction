@@ -366,6 +366,7 @@ def objective(trial, cvp, input_size, x_train_tensor, y_train_tensor):
 
     return f1
 
+
 def visualize_results(
     ground_truth: pd.Series,
     result: pd.Series
@@ -378,15 +379,11 @@ def visualize_results(
     """
 
     #First prints the predictions scores
-    print(report(ground_truth,result))
+    print(report(ground_truth, result))
 
     #Plots the confusion matrix
-
     plot_confusion_matrix(ground_truth,result,normalize = True)
     plt.show()
-
-
-
 
 
 df = preprocess_data('kidney_disease.csv', index_column=0)
@@ -399,4 +396,4 @@ xtrain, ytrain, xtest, ytest, cv = prepare_dataset_for_training(
 
 print(training(x_train=xtrain, y_train=ytrain, x_test=xtest, y_test=ytest, cvp=cv, n_trials=10))
 
-visualize_results(y_train,y_train)
+visualize_results(xtrain, ytrain)
