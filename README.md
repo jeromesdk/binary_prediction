@@ -7,13 +7,14 @@ This project has been done by Jérôme Sioc'han de Kersabiec, Pierre Monot and R
 ## Purpose
 
 The project aims to implement a machine learning workflow no matter the kind of input dataset.
+
 1. Import the dataset
 2. Clean the data, perform pre-processing
-    I Replace missing values by average or median values
-    I Center and normalize the data
+    Replace missing values by average or median values
+    Center and normalize the data
 3. Split the dataset
-    I Split between training set and test set
-    I Split the training set for cross-validation
+    Split between training set and test set
+    Split the training set for cross-validation
 4. Train the model (including feature selection)
 5. Validate the model
 
