@@ -16,12 +16,17 @@ import optuna
 import pandas as pd
 import re
 
+from sklearn.model_selection import train_test_split, ShuffleSplit
+
 from optuna.integration import OptunaSearchCV
 from sklearn.metrics import accuracy_score, f1_score, confusion_matrix
 from sklearn.model_selection import train_test_split, ShuffleSplit, cross_val_score, cross_val_predict, GridSearchCV
 from typing import Tuple
 from typing import Union
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report as report
+from scikitplot.metrics import plot_confusion_matrix, plot_precision_recall_curve
+import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
@@ -361,6 +366,28 @@ def objective(trial, cvp, input_size, x_train_tensor, y_train_tensor):
 
     return f1
 
+def visualize_results(
+    ground_truth: pd.Series,
+    result: pd.Series
+):
+    """
+    Prints different metrics and plots to visualize the classification results
+
+    :param ground_truth: pandas.Series of the true Labels
+    :param result: pandas.Series of the predicted Labels
+    """
+
+    #First prints the predictions scores
+    print(report(ground_truth,result))
+
+    #Plots the confusion matrix
+
+    plot_confusion_matrix(ground_truth,result,normalize = True)
+    plt.show()
+
+
+
+
 
 df = preprocess_data('kidney_disease.csv', index_column=0)
 
@@ -371,3 +398,5 @@ xtrain, ytrain, xtest, ytest, cv = prepare_dataset_for_training(
 )
 
 print(training(x_train=xtrain, y_train=ytrain, x_test=xtest, y_test=ytest, cvp=cv, n_trials=10))
+
+visualize_results(y_train,y_train)
