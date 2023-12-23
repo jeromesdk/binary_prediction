@@ -9,12 +9,8 @@ This project has been done by Jérôme Sioc'han de Kersabiec, Pierre Monot and R
 The project aims to implement a machine learning workflow no matter the kind of input dataset.
 
 1. Import the dataset
-2. Clean the data, perform pre-processing
-    Replace missing values by average or median values
-    Center and normalize the data
-3. Split the dataset
-    Split between training set and test set
-    Split the training set for cross-validation
+2. Clean the data, perform pre-processing (replace missing values by average or median values, center and normalize the data)
+3. Split the dataset (split between training set and test set, split the training set for cross-validation)
 4. Train the model (including feature selection)
 5. Validate the model
 
@@ -28,7 +24,7 @@ pip install -r requirements.txt
 
 ## Data descritpion
 
-We worked on two different datasets :
+We worked on two different datasets below is a description of those datasets :
 
 - data_banknote: 
     - Data format: .txt 
