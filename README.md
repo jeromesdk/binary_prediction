@@ -72,8 +72,5 @@ We worked on two different datasets below is a description of those datasets :
         25. class (boolean)
         - Number of lines: 400 
         - Missing data: yes, a lot
-    - Task: Classification (find if patient has ckd or not)
-
-
-
+    - Task: Classification: find if patient has ckd or not
 
