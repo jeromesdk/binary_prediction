@@ -1,4 +1,4 @@
-# mini_project_ML
+# ML Project
 
 ## Authors
 
